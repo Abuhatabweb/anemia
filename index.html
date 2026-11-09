@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محاكي معادلة جانزوني الإكلينيكي | Ganzoni Clinical Simulator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Cairo & Tajawal -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                        tajawal: ['Tajawal', 'sans-serif'],
+                    },
+                    colors: {
+                        medical: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        },
+                        heme: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 8px;
+            border-radius: 999px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -6px;
+            background-color: #ffffff;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+            border: 3px solid currentColor;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+        .formula-box {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        .card-hover {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -8px rgba(15, 23, 42, 0.12);
+        }
+        .ampoule-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 36px;
+            border-radius: 6px 6px 4px 4px;
+            position: relative;
+            margin: 2px;
+            transition: all 0.2s ease;
+        }
+        .ampoule-icon::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            width: 8px;
+            height: 6px;
+            border-radius: 3px 3px 0 0;
+            background-color: inherit;
+            opacity: 0.85;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-16">
+
+    <!-- Top Clinical Header -->
+    <header class="bg-gradient-to-l from-slate-900 via-teal-950 to-slate-900 text-white shadow-lg border-b border-teal-800/40 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-red-700 flex items-center justify-center shadow-lg shadow-rose-900/40 border border-rose-400/30">
+                        <i class="fa-solid fa-droplet text-2xl text-white"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight">محاكي معادلة جانزوني الإكلينيكي</h1>
+                            <span class="bg-teal-500/20 text-teal-300 border border-teal-400/30 text-xs font-bold px-2.5 py-0.5 rounded-full">FDA / WHO Guidelines</span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-300 mt-0.5">نظام دعم القرار السريري لحساب عجز الحديد الكلي وبروتوكولات التعويض الوريدي (IV Iron Regimens)</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 self-start md:self-auto">
+                    <button onclick="copyClinicalSummary()" class="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-500 text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl shadow transition cursor-pointer">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>نسخ التقرير الإكلينيكي</span>
+                    </button>
+                    <button onclick="resetToDefault()" class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition cursor-pointer" title="إعادة ضبط">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span class="hidden sm:inline">إعادة ضبط</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+
+        <!-- Quick Clinical Case Presets Bar -->
+        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-user-doctor text-teal-600 text-lg"></i>
+                    <h2 class="text-sm sm:text-base font-bold text-slate-800">حالات سريرية جاهزة للمحاكاة الفورية (Clinical Scenarios):</h2>
+                </div>
+                <span id="activeScenarioBadge" class="text-xs font-bold bg-teal-50 text-teal-700 px-3 py-1 rounded-full border border-teal-200">الحالة الافتراضية</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                <!-- Case 1 -->
+                <button onclick="loadPreset(1)" id="presetBtn1" class="preset-btn text-right p-3 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50/40 transition flex flex-col justify-between group cursor-pointer bg-slate-50/60">
+                    <div class="flex items-center justify-between w-full mb-1">
+                        <span class="text-xs font-extrabold text-teal-700 group-hover:text-teal-800">حالة 1: غزارة الطمث</span>
+                        <span class="text-[11px] bg-rose-100 text-rose-700 font-bold px-2 py-0.5 rounded-md">Hb: 8.0</span>
+                    </div>
+                    <p class="text-xs text-slate-600">سيدة 28 سنة | الوزن: 60 كجم | مخزون: 500 ملجم</p>
+                </button>
+
+                <!-- Case 2 -->
+                <button onclick="loadPreset(2)" id="presetBtn2" class="preset-btn text-right p-3 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50/40 transition flex flex-col justify-between group cursor-pointer bg-slate-50/60">
+                    <div class="flex items-center justify-between w-full mb-1">
+                        <span class="text-xs font-extrabold text-teal-700 group-hover:text-teal-800">حالة 2: فشل كلوي مزمن (CKD)</span>
+                        <span class="text-[11px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-md">Hb: 9.2</span>
+                    </div>
+                    <p class="text-xs text-slate-600">رجل 55 سنة | الوزن: 82 كجم | يحتاج حديد مع EPO</p>
+                </button>
+
+                <!-- Case 3 -->
+                <button onclick="loadPreset(3)" id="presetBtn3" class="preset-btn text-right p-3 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50/40 transition flex flex-col justify-between group cursor-pointer bg-slate-50/60">
+                    <div class="flex items-center justify-between w-full mb-1">
+                        <span class="text-xs font-extrabold text-teal-700 group-hover:text-teal-800">حالة 3: طفل (سوء امتصاص)</span>
+                        <span class="text-[11px] bg-rose-100 text-rose-700 font-bold px-2 py-0.5 rounded-md">Hb: 7.5</span>
+                    </div>
+                    <p class="text-xs text-slate-600">طفل 8 سنوات | الوزن: 24 كجم (&lt;35 كجم) | مخزون 15 ملجم/كجم</p>
+                </button>
+
+                <!-- Case 4 -->
+                <button onclick="loadPreset(4)" id="presetBtn4" class="preset-btn text-right p-3 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50/40 transition flex flex-col justify-between group cursor-pointer bg-slate-50/60">
+                    <div class="flex items-center justify-between w-full mb-1">
+                        <span class="text-xs font-extrabold text-teal-700 group-hover:text-teal-800">حالة 4: أنيميا حادة قبل جراحة</span>
+                        <span class="text-[11px] bg-red-600 text-white font-bold px-2 py-0.5 rounded-md animate-pulse">Hb: 6.8</span>
+                    </div>
+                    <p class="text-xs text-slate-600">مريض 45 سنة | الوزن: 75 كجم | تعويض سريع</p>
+                </button>
+            </div>
+        </section>
+
+        <!-- Dynamic Clinical Safety Alert Banner (Hidden unless triggered) -->
+        <div id="criticalHbAlert" class="hidden bg-red-50 border-2 border-red-500 rounded-2xl p-4 shadow-sm">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm sm:text-base font-extrabold text-red-900">تنبيه سريري حرج: الهيموجلوبين أقل من 7.0 g/dL (Severe Anemia Threshold)</h3>
+                    <p class="text-xs sm:text-sm text-red-800 mt-1 leading-relaxed">
+                        حسب توصيات <strong>AABB / FDA</strong>، عندما ينخفض الهيموجلوبين عن <strong>7.0 g/dL</strong> (أو أقل من 8.0 g/dL لمرضى القلب والأوعية الدموية)، يجب تقييم حالة المريض الفسيولوجية (Hemodynamic Stability)؛ فإذا كان المريض يعاني من نهجان حاد أثناء الراحة، ألم بالصدر، أو هبوط في الدورة الدموية، يصبح <strong>نقل كرات الدم الحمراء المكدسة (Packed RBCs Transfusion)</strong> أولوية طارئة لإنقاذ الأعضاء قبل أو بالتزامن مع تعويض الحديد الوريدي.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Workspace Grid: Left/Right Columns -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- RIGHT COLUMN (Inputs & Patient Parameters - 5 Cols) -->
+            <div class="lg:col-span-5 space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-sliders"></i>
+                            </span>
+                            <h2 class="text-lg font-extrabold text-slate-800">معطيات المريض السريرية</h2>
+                        </div>
+                        <span id="ageGroupTag" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">بالغ (≥ 35 كجم)</span>
+                    </div>
+
+                    <!-- 1. Weight Input + IBW Calculator Toggle -->
+                    <div class="space-y-2.5 bg-slate-50/70 p-4 rounded-xl border border-slate-200/70">
+                        <div class="flex items-center justify-between">
+                            <label for="weightNum" class="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                                <i class="fa-solid fa-weight-scale text-teal-600"></i>
+                                <span>وزن المريض (Weight):</span>
+                            </label>
+                            <div class="flex items-center gap-1.5">
+                                <input type="number" id="weightNum" min="8" max="180" step="0.5" value="60"
+                                    class="w-20 text-center font-extrabold text-base text-teal-800 bg-white border border-slate-300 rounded-lg py-1 px-2 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                                <span class="text-xs font-bold text-slate-500">كجم (kg)</span>
+                            </div>
+                        </div>
+
+                        <input type="range" id="weightSlider" min="8" max="150" step="0.5" value="60"
+                            class="w-full text-teal-600 bg-teal-200 rounded-lg">
+
+                        <div class="flex justify-between text-[11px] text-slate-400 font-semibold">
+                            <span>8 كجم (أطفال)</span>
+                            <span class="text-amber-600 font-bold">35 كجم (الحد الفاصل)</span>
+                            <span>150 كجم</span>
+                        </div>
+
+                        <!-- Obesity / Ideal Body Weight (IBW) Helper Toggle -->
+                        <div class="pt-2 border-t border-slate-200/80 mt-2">
+                            <button type="button" onclick="toggleIBWPanel()" class="w-full flex items-center justify-between text-xs font-bold text-teal-700 hover:text-teal-900 py-1 cursor-pointer">
+                                <span class="flex items-center gap-1.5">
+                                    <i class="fa-solid fa-calculator"></i>
+                                    <span>هل يعاني المريض من سمنة؟ احسب الوزن المثالي (IBW)</span>
+                                </span>
+                                <i id="ibwChevron" class="fa-solid fa-chevron-down transition-transform"></i>
+                            </button>
+
+                            <!-- Collapsible IBW Calculator -->
+                            <div id="ibwPanel" class="hidden mt-3 p-3 bg-white rounded-xl border border-teal-200 space-y-3 text-xs">
+                                <p class="text-slate-600 leading-relaxed">
+                                    <i class="fa-solid fa-circle-info text-teal-600 ml-1"></i>
+                                    في حالات السمنة المفرطة، استخدام الوزن الفعلي في معادلة جانزوني قد يؤدي لجرعة زائدة؛ لذا يُنصح باستخدام <strong>الوزن المثالي (IBW)</strong> أو الوزن المعدل.
+                                </p>
+                                <div class="grid grid-cols-2 gap-2.5">
+                                    <div>
+                                        <label class="block text-slate-600 font-bold mb-1">الجنس:</label>
+                                        <select id="ibwGender" onchange="calculateIBW()" class="w-full border border-slate-300 rounded-lg p-1.5 font-bold text-slate-700 bg-slate-50">
+                                            <option value="female">أنثى (Female)</option>
+                                            <option value="male">ذكر (Male)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-slate-600 font-bold mb-1">الطول (سم):</label>
+                                        <input type="number" id="ibwHeight" value="165" min="120" max="220" oninput="calculateIBW()" class="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold text-slate-800">
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between bg-teal-50/80 p-2.5 rounded-lg border border-teal-100">
+                                    <div>
+                                        <span class="text-slate-600 block">الوزن المثالي المحسوب (Devine):</span>
+                                        <span id="ibwResultText" class="text-sm font-extrabold text-teal-800">57.0 كجم</span>
+                                        <span id="bmiBadge" class="mr-1 text-[11px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">BMI: 22.0</span>
+                                    </div>
+                                    <button type="button" onclick="applyIBW()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm transition cursor-pointer">
+                                        تطبيق الوزن المثالي
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Actual Hemoglobin Input -->
+                    <div class="space-y-2.5 bg-rose-50/50 p-4 rounded-xl border border-rose-200/70">
+                        <div class="flex items-center justify-between">
+                            <label for="actualHbNum" class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-vial-circle-check text-rose-600"></i>
+                                <span>الهيموجلوبين الحالي (Actual Hb):</span>
+                            </label>
+                            <div class="flex items-center gap-1.5">
+                                <input type="number" id="actualHbNum" min="3.5" max="15.5" step="0.1" value="8.0"
+                                    class="w-20 text-center font-extrabold text-base text-rose-700 bg-white border border-rose-300 rounded-lg py-1 px-2 focus:outline-none focus:ring-2 focus:ring-rose-500">
+                                <span class="text-xs font-bold text-slate-500">g/dL</span>
+                            </div>
+                        </div>
+
+                        <input type="range" id="actualHbSlider" min="4.0" max="14.5" step="0.1" value="8.0"
+                            class="w-full text-rose-600 bg-rose-200 rounded-lg">
+
+                        <div class="flex items-center justify-between text-[11px] font-semibold pt-1">
+                            <span class="text-red-600 font-bold">4.0 (حرج جداً)</span>
+                            <span id="anemiaSeverityBadge" class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold border border-rose-200">
+                                أنيميا متوسطة الشدة
+                            </span>
+                            <span class="text-emerald-700">14.5 (طبيعي)</span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Target Hemoglobin Input -->
+                    <div class="space-y-2.5 bg-slate-50/70 p-4 rounded-xl border border-slate-200/70">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label for="targetHbNum" class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-bullseye text-sky-600"></i>
+                                    <span>الهيموجلوبين المستهدف (Target Hb):</span>
+                                </label>
+                                <p id="targetHbHint" class="text-[11px] text-slate-500 mt-0.5">المعيار القياسي للبالغين في معادلة جانزوني هو 15 g/dL</p>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <input type="number" id="targetHbNum" min="10.0" max="17.0" step="0.5" value="15.0"
+                                    class="w-20 text-center font-extrabold text-base text-sky-800 bg-white border border-slate-300 rounded-lg py-1 px-2 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                <span class="text-xs font-bold text-slate-500">g/dL</span>
+                            </div>
+                        </div>
+
+                        <input type="range" id="targetHbSlider" min="11.0" max="16.5" step="0.5" value="15.0"
+                            class="w-full text-sky-600 bg-sky-200 rounded-lg">
+
+                        <div class="flex items-center justify-between pt-1">
+                            <label class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 cursor-pointer">
+                                <input type="checkbox" id="autoTargetHbCheck" checked onchange="handleAutoTargetToggle()" class="rounded text-teal-600 focus:ring-teal-500 w-4 h-4">
+                                <span>ضبط تلقائي حسب الوزن (15 للبالغين | 13 للأطفال &lt;35 كجم)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 4. Depot Iron / Ferritin Stores Input -->
+                    <div class="space-y-3 bg-amber-50/40 p-4 rounded-xl border border-amber-200/80">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label for="depotIronNum" class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-vault text-amber-600"></i>
+                                    <span>مخزون الحديد المستهدف (Depot Iron):</span>
+                                </label>
+                                <p class="text-[11px] text-slate-500 mt-0.5">لتعويض مخزون الـ Ferritin في الكبد ونخاع العظم</p>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <input type="number" id="depotIronNum" min="0" max="1500" step="50" value="500"
+                                    class="w-20 text-center font-extrabold text-base text-amber-800 bg-white border border-amber-300 rounded-lg py-1 px-2 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <span class="text-xs font-bold text-slate-500">ملجم</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <label class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                                <input type="checkbox" id="autoDepotCheck" checked onchange="handleAutoDepotToggle()" class="rounded text-amber-600 focus:ring-amber-500 w-4 h-4">
+                                <span>حساب تلقائي للمخزون (500 ملجم للبالغين | 15 ملجم/كجم للأطفال)</span>
+                            </label>
+                        </div>
+
+                        <!-- Quick Depot Buttons -->
+                        <div class="grid grid-cols-4 gap-1.5 pt-1">
+                            <button type="button" onclick="setManualDepot(0)" class="text-xs font-bold py-1.5 px-2 rounded-lg border border-amber-200 bg-white hover:bg-amber-100 text-slate-700 transition cursor-pointer">0 ملجم (بدون مخزون)</button>
+                            <button type="button" onclick="setManualDepot(500)" class="text-xs font-bold py-1.5 px-2 rounded-lg border border-amber-300 bg-amber-100/70 hover:bg-amber-200 text-amber-900 transition cursor-pointer">500 ملجم (قياسي)</button>
+                            <button type="button" onclick="setManualDepot(750)" class="text-xs font-bold py-1.5 px-2 rounded-lg border border-amber-200 bg-white hover:bg-amber-100 text-slate-700 transition cursor-pointer">750 ملجم</button>
+                            <button type="button" onclick="setManualDepot(1000)" class="text-xs font-bold py-1.5 px-2 rounded-lg border border-amber-200 bg-white hover:bg-amber-100 text-slate-700 transition cursor-pointer">1000 ملجم (مرتفع)</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- LEFT COLUMN (Live Formula Breakdown & Clinical Outputs - 7 Cols) -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- 1. Interactive Mathematical Formula Card -->
+                <div class="formula-box text-white rounded-2xl p-5 sm:p-6 shadow-xl border border-slate-700/80 relative overflow-hidden">
+                    <!-- Decorative background circle -->
+                    <div class="absolute -left-16 -top-16 w-48 h-48 bg-teal-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-700/80 pb-4 mb-5">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-teal-400 block">التفكيك الحسابي المباشر</span>
+                            <h2 class="text-lg sm:text-xl font-extrabold text-white mt-0.5">معادلة جانزوني (Ganzoni Equation)</h2>
+                        </div>
+                        <button onclick="toggleConstantModal()" class="self-start sm:self-auto inline-flex items-center gap-1.5 text-xs font-bold bg-slate-800/90 hover:bg-slate-700 text-teal-300 border border-teal-500/30 px-3 py-1.5 rounded-xl transition cursor-pointer">
+                            <i class="fa-solid fa-circle-question"></i>
+                            <span>من أين جاء الثابت 2.4؟</span>
+                        </button>
+                    </div>
+
+                    <!-- Constant 2.4 Explanation Box (Collapsible) -->
+                    <div id="constantExplanation" class="hidden mb-5 bg-slate-800/90 border border-teal-500/40 rounded-xl p-3.5 text-xs text-slate-200 space-y-1.5">
+                        <div class="font-bold text-teal-300 flex items-center justify-between">
+                            <span>التفسير الفسيولوجي للثابت المعياري (2.4):</span>
+                            <button onclick="toggleConstantModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <p class="leading-relaxed">
+                            حجم الدم في الإنسان يمثل حوالي <strong>7% من وزن الجسم</strong> (0.07 لتر/كجم)، ويحتوي كل جرام من الهيموجلوبين على <strong>0.34% من الحديد العنصري</strong> (3.4 ملجم حديد لكل جرام هيموجلوبين).
+                        </p>
+                        <div class="bg-slate-900/90 p-2 rounded-lg font-mono text-center text-teal-300 dir-ltr">
+                            0.07 (Blood Volume) × 3.4 (mg Iron/g Hb) × 10 (dL per L) = 2.38 ≈ 2.4
+                        </div>
+                    </div>
+
+                    <!-- Live Visual Equation Blocks -->
+                    <div class="bg-slate-900/80 border border-slate-700 rounded-2xl p-4 mb-6">
+                        <div class="text-xs text-slate-400 font-semibold mb-3 text-center">
+                            إجمالي عجز الحديد (ملجم) = [ الوزن × (الهيموجلوبين المستهدف − الهيموجلوبين الحالي) × 2.4 ] + مخزون الحديد
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center py-2">
+                            <!-- Weight -->
+                            <div class="bg-slate-800 border border-teal-500/40 rounded-xl px-3 py-2 min-w-[75px]">
+                                <span class="block text-[10px] text-teal-300 font-bold">الوزن</span>
+                                <span id="eqWeight" class="text-base sm:text-lg font-extrabold text-white">60</span>
+                                <span class="text-[10px] text-slate-400">كجم</span>
+                            </div>
+
+                            <span class="text-lg font-bold text-slate-400">×</span>
+
+                            <!-- Hb Diff -->
+                            <div class="bg-slate-800 border border-rose-500/40 rounded-xl px-3 py-2 min-w-[125px]">
+                                <span class="block text-[10px] text-rose-300 font-bold">فارق الهيموجلوبين (Δ Hb)</span>
+                                <span class="text-base sm:text-lg font-extrabold text-white">
+                                    (<span id="eqTargetHb">15.0</span> − <span id="eqActualHb">8.0</span> = <span id="eqDiffHb" class="text-rose-400">7.0</span>)
+                                </span>
+                            </div>
+
+                            <span class="text-lg font-bold text-slate-400">×</span>
+
+                            <!-- Constant 2.4 -->
+                            <div class="bg-slate-800 border border-sky-500/40 rounded-xl px-3 py-2 min-w-[65px]">
+                                <span class="block text-[10px] text-sky-300 font-bold">الثابت</span>
+                                <span class="text-base sm:text-lg font-extrabold text-sky-400">2.4</span>
+                            </div>
+
+                            <span class="text-lg font-bold text-slate-400">+</span>
+
+                            <!-- Depot Iron -->
+                            <div class="bg-slate-800 border border-amber-500/40 rounded-xl px-3 py-2 min-w-[85px]">
+                                <span class="block text-[10px] text-amber-300 font-bold">المخزون</span>
+                                <span id="eqDepot" class="text-base sm:text-lg font-extrabold text-amber-400">500</span>
+                                <span class="text-[10px] text-slate-400">ملجم</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Primary Hero Result & Breakdown Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-stretch">
+                        <!-- Hb Deficit Iron -->
+                        <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 flex flex-col justify-between">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-rose-300">حديد تصنيع الهيموجلوبين</span>
+                                <i class="fa-solid fa-droplet text-rose-400 text-sm"></i>
+                            </div>
+                            <div class="my-1.5">
+                                <span id="resHbIron" class="text-2xl font-black text-white">1,008</span>
+                                <span class="text-xs font-bold text-slate-400 mr-1">ملجم</span>
+                            </div>
+                            <div class="text-[11px] text-slate-400 flex items-center justify-between">
+                                <span>نسبته من الجرعة:</span>
+                                <span id="resHbIronPct" class="font-bold text-rose-300">67%</span>
+                            </div>
+                        </div>
+
+                        <!-- Depot Stores Iron -->
+                        <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 flex flex-col justify-between">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-amber-300">حديد ملء المخازن (Ferritin)</span>
+                                <i class="fa-solid fa-boxes-stacked text-amber-400 text-sm"></i>
+                            </div>
+                            <div class="my-1.5">
+                                <span id="resDepotIron" class="text-2xl font-black text-white">500</span>
+                                <span class="text-xs font-bold text-slate-400 mr-1">ملجم</span>
+                            </div>
+                            <div class="text-[11px] text-slate-400 flex items-center justify-between">
+                                <span>نسبته من الجرعة:</span>
+                                <span id="resDepotIronPct" class="font-bold text-amber-300">33%</span>
+                            </div>
+                        </div>
+
+                        <!-- Total Iron Deficit -->
+                        <div class="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl p-4 shadow-lg flex flex-col justify-between border border-teal-300/40">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-extrabold text-teal-950 bg-white/90 px-2 py-0.5 rounded-md">العجز الكلي للحديد</span>
+                                <i class="fa-solid fa-check-double text-white text-base"></i>
+                            </div>
+                            <div class="my-1">
+                                <span id="resTotalDeficit" class="text-3xl sm:text-4xl font-black text-white tracking-tight">1,508</span>
+                                <span class="text-xs font-extrabold text-teal-100 mr-1">ملجم (mg)</span>
+                            </div>
+                            <div class="text-[11px] text-teal-50 font-semibold">
+                                الجرعة الإكلينيكية المقربة: <strong id="resRoundedDeficit" class="underline">1,500 ملجم</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Stacked Progress Bar -->
+                    <div class="mt-5 space-y-1.5">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span class="text-rose-300 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+                                لتصحيح الهيموجلوبين (<span id="barHbText">1008 ملجم</span>)
+                            </span>
+                            <span class="text-amber-300 flex items-center gap-1.5">
+                                لملء مخزون الـ Ferritin (<span id="barDepotText">500 ملجم</span>)
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
+                            </span>
+                        </div>
+                        <div class="w-full h-3.5 bg-slate-800 rounded-full overflow-hidden flex p-0.5 border border-slate-700">
+                            <div id="barHbWidth" class="bg-gradient-to-l from-rose-500 to-rose-600 h-full rounded-r-full transition-all duration-300" style="width: 67%"></div>
+                            <div id="barDepotWidth" class="bg-gradient-to-l from-amber-400 to-amber-500 h-full rounded-l-full transition-all duration-300" style="width: 33%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Clinical IV Iron Regimen Translator Cards -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-syringe text-teal-600 text-lg"></i>
+                            <h2 class="text-lg font-extrabold text-slate-800">ترجمة النتيجة إلى بروتوكولات الحديد الوريدي (IV Iron Protocols)</h2>
+                        </div>
+                        <span class="text-xs text-slate-500 font-semibold hidden sm:inline">تحديث تلقائي حسب الجرعة والوزن</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        <!-- Card A: Sacrofer / Venofer (Iron Sucrose) -->
+                        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/90 card-hover flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-start justify-between gap-2 border-b border-slate-100 pb-3 mb-3">
+                                    <div>
+                                        <span class="text-[11px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">متعدد الجلسات (Multi-Session)</span>
+                                        <h3 class="text-base font-extrabold text-slate-900 mt-1">Sacrofer® / Venofer®</h3>
+                                        <p class="text-xs text-slate-500 font-semibold">سكروز الحديد (Iron Sucrose) — 100 ملجم / أمبولة (5 مل)</p>
+                                    </div>
+                                    <div class="w-10 h-10 rounded-xl bg-amber-100/80 text-amber-700 flex items-center justify-center font-extrabold shrink-0">
+                                        <i class="fa-solid fa-vials"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Key Dosing Metrics -->
+                                <div class="grid grid-cols-2 gap-2.5 mb-4">
+                                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/60 text-center">
+                                        <span class="text-xs text-slate-500 font-bold block">إجمالي الأمبولات</span>
+                                        <span id="sacroferAmpoules" class="text-2xl font-black text-amber-700">15</span>
+                                        <span class="text-[11px] font-bold text-slate-500 block">أمبولة (100 ملجم)</span>
+                                    </div>
+                                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/60 text-center">
+                                        <span class="text-xs text-slate-500 font-bold block">عدد الجلسات المطلوبة</span>
+                                        <span id="sacroferSessions" class="text-2xl font-black text-slate-800">8</span>
+                                        <span id="sacroferPerSessionLabel" class="text-[11px] font-bold text-teal-700 block">200 ملجم / جلسة</span>
+                                    </div>
+                                </div>
+
+                                <!-- Visual Ampoules Counter -->
+                                <div class="mb-3 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100">
+                                    <div class="flex items-center justify-between text-[11px] font-bold text-slate-600 mb-1.5">
+                                        <span>تمثيل الأمبولات المطلوبة (كل أيقونة = 100 ملجم):</span>
+                                        <span id="sacroferTotalMgBadge" class="text-amber-800">1500 ملجم</span>
+                                    </div>
+                                    <div id="ampouleVisualContainer" class="flex flex-wrap items-center py-1">
+                                        <!-- Dynamically populated via JS -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Administration Protocol -->
+                            <div class="bg-amber-50/70 border border-amber-200/70 rounded-xl p-3 text-xs text-slate-700 space-y-1">
+                                <div class="font-extrabold text-amber-900 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-clipboard-check"></i>
+                                    <span>طريقة الإعطاء السريرية:</span>
+                                </div>
+                                <p id="sacroferProtocolText" class="leading-relaxed">
+                                    تُخفف أمبولتان (<strong>200 ملجم</strong>) في <strong>100 مل محلول ملح 0.9% Normal Saline</strong> وتُعطى بالتنقيط الوريدي البطيء على مدار <strong>15 إلى 30 دقيقة</strong>، بمعدل جلستين إلى 3 جلسات أسبوعياً.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Card B: Injectafer / Ferinject (Ferric Carboxymaltose) -->
+                        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/90 card-hover flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-start justify-between gap-2 border-b border-slate-100 pb-3 mb-3">
+                                    <div>
+                                        <span class="text-[11px] font-extrabold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-md">سريع التحميل (High-Dose Rapid)</span>
+                                        <h3 class="text-base font-extrabold text-slate-900 mt-1">Injectafer® / Ferinject®</h3>
+                                        <p class="text-xs text-slate-500 font-semibold">كاربوكسي مالتوز الحديديك (Ferric Carboxymaltose)</p>
+                                    </div>
+                                    <div class="w-10 h-10 rounded-xl bg-teal-100/80 text-teal-700 flex items-center justify-center font-extrabold shrink-0">
+                                        <i class="fa-solid fa-bolt"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Comparison: Ganzoni vs Simplified Table -->
+                                <div class="grid grid-cols-2 gap-2.5 mb-3">
+                                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 text-center">
+                                        <span class="text-[11px] text-slate-500 font-bold block">حسب معادلة جانزوني</span>
+                                        <span id="injectaferGanzoniMg" class="text-xl font-black text-slate-800">1,500</span>
+                                        <span class="text-[10px] font-bold text-slate-500 block">ملجم</span>
+                                    </div>
+                                    <div class="bg-teal-50/70 p-2.5 rounded-xl border border-teal-200 text-center">
+                                        <span class="text-[11px] text-teal-800 font-bold block">الجدول المبسط (FDA/EMA)</span>
+                                        <span id="injectaferSimplifiedMg" class="text-xl font-black text-teal-700">1,500</span>
+                                        <span id="injectaferSimplifiedNote" class="text-[10px] font-bold text-teal-600 block">وزن 35-70 | Hb &lt; 10</span>
+                                    </div>
+                                </div>
+
+                                <!-- Sessions Breakdown Timeline -->
+                                <div id="injectaferSessionsBox" class="space-y-2 mb-3">
+                                    <!-- Dynamically populated via JS -->
+                                </div>
+                            </div>
+
+                            <!-- Administration Protocol -->
+                            <div class="bg-teal-50/70 border border-teal-200/70 rounded-xl p-3 text-xs text-slate-700 space-y-1">
+                                <div class="font-extrabold text-teal-900 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-shield-heart"></i>
+                                    <span>الحد الأقصى للجلسة الواحدة وطريقة الإعطاء:</span>
+                                </div>
+                                <p id="injectaferCapText" class="leading-relaxed">
+                                    الحد الأقصى للجلسة الواحدة هو <strong>1000 ملجم</strong> (أو <strong>20 ملجم/كجم</strong>)، تُعطى بالتنقيط الوريدي خلال <strong>15 دقيقة</strong>. إذا تخطى الاحتياج 1000 ملجم، تُعطى الجرعة المتبقية بعد <strong>7 أيام</strong>.
+                                </p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Card C: Monoferric & Oral Alternative Bar -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Monoferric -->
+                        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/90 flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 mt-1">
+                                <i class="fa-solid fa-star-of-life"></i>
+                            </div>
+                            <div class="text-xs space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-extrabold text-slate-900 text-sm">Monoferric® (Ferric Derisomaltose)</h4>
+                                    <span class="bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded border border-indigo-200 text-[10px]">جلسة كلية واحدة</span>
+                                </div>
+                                <p id="monoferricText" class="text-slate-600 leading-relaxed">
+                                    يسمح بإعطاء جرعة تعويضية كاملة (Total Dose Infusion) بحد أقصى <strong>20 ملجم/كجم</strong> في زيارة واحدة خلال 20-30 دقيقة.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Ferroduonal Oral Alternative Context -->
+                        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/90 flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-1">
+                                <i class="fa-solid fa-capsules"></i>
+                            </div>
+                            <div class="text-xs space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-extrabold text-slate-900 text-sm">البديل الفموي: Ferroduonal® (100 ملجم)</h4>
+                                    <span class="bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded border border-emerald-200 text-[10px]">يوم بعد يوم</span>
+                                </div>
+                                <p class="text-slate-600 leading-relaxed">
+                                    في حال عدم وجود دواعي للوريدي: كبسولة واحدة <strong>يوم بعد يوم (Alternate-day)</strong> على معدة فارغة مع فيتامين C لمدة <strong>3 إلى 6 أشهر</strong> بعد استقرار الهيموجلوبين.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Bottom Section: Expected Clinical Response Curve & Timeline -->
+        <section class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/90 space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center">
+                        <i class="fa-solid fa-chart-line text-lg"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-lg font-extrabold text-slate-900">منحنى الاستجابة السريرية المتوقع للمريض (12 أسبوعاً)</h2>
+                        <p class="text-xs text-slate-500">مقارنة مسار تعافي الهيموجلوبين (Hb) بين العلاج بالحديد الوريدي السريع والحديد الفموي التدريجي</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 text-xs font-bold">
+                    <span class="flex items-center gap-1.5 text-teal-700">
+                        <span class="w-3 h-3 rounded-full bg-teal-600 inline-block"></span>
+                        مسار الحديد الوريدي (IV Iron)
+                    </span>
+                    <span class="flex items-center gap-1.5 text-rose-600">
+                        <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                        مسار الحديد الفموي (Oral Iron)
+                    </span>
+                </div>
+            </div>
+
+            <!-- Interactive Canvas Chart -->
+            <div class="w-full h-64 sm:h-72 bg-slate-50/70 rounded-xl border border-slate-200/80 p-3 relative">
+                <canvas id="recoveryChart" class="w-full h-full block"></canvas>
+            </div>
+
+            <!-- 4 Clinical Milestones Timeline Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-2">
+                <!-- Milestone 1 -->
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-extrabold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">اليوم 7 إلى 10</span>
+                        <i class="fa-solid fa-microscope text-indigo-500"></i>
+                    </div>
+                    <h4 class="text-sm font-extrabold text-slate-800 pt-1">أزمة الخلايا الشبكية (Reticulocyte Crisis)</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        قفزة حادة في إنتاج كرات الدم الحمراء الشابة (Reticulocytes) كدليل مبكر قاطع على استجابة نخاع العظم للحديد.
+                    </p>
+                </div>
+
+                <!-- Milestone 2 -->
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-extrabold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">الأسبوع 2 إلى 4</span>
+                        <i class="fa-solid fa-heart-pulse text-rose-500"></i>
+                    </div>
+                    <h4 class="text-sm font-extrabold text-slate-800 pt-1">ارتفاع الهيموجلوبين (+1 إلى 2 g/dL)</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        يتوقع وصول الهيموجلوبين إلى <strong id="milestoneWk4Hb" class="text-rose-700">10.0 g/dL</strong> مع اختفاء النهجان والتعب. (إذا لم يرتفع بـ 1 g/dL، راجع التشخيص أو النزيف).
+                    </p>
+                </div>
+
+                <!-- Milestone 3 -->
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-extrabold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">الأسبوع 6 إلى 8</span>
+                        <i class="fa-solid fa-check-circle text-teal-600"></i>
+                    </div>
+                    <h4 class="text-sm font-extrabold text-slate-800 pt-1">تصحيح الأنيميا والحجم الكروي (MCV)</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        وصول الهيموجلوبين للهدف الطبيعي (<strong id="milestoneWk8Hb" class="text-teal-700">15.0 g/dL</strong>) مع عودة مؤشر الـ MCV إلى النطاق الطبيعي (80-100 fL).
+                    </p>
+                </div>
+
+                <!-- Milestone 4 -->
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-extrabold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">الأسبوع 8 إلى 12+</span>
+                        <i class="fa-solid fa-battery-full text-amber-600"></i>
+                    </div>
+                    <h4 class="text-sm font-extrabold text-slate-800 pt-1">امتلاء مخازن الـ Ferritin</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        استقرار الـ Ferritin فوق <strong>70 - 100 µg/L</strong> (توقف تساقط الشعر ومنع الانتكاسة). يُفحص الـ Ferritin بعد 4 أسابيع من آخر جلسة وريدية.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Custom Toast Notification for Clipboard Copy -->
+    <div id="toastNotification" class="fixed bottom-5 left-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-teal-500/40 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <div class="text-xs">
+                <p class="font-extrabold">تم نسخ التقرير الإكلينيكي بنجاح!</p>
+                <p class="text-slate-400">يمكنك لصقه مباشرة في ملف المريض أو الروشتة العلاجية.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript -->
+    <script>
+        // --- State Elements ---
+        const weightNum = document.getElementById('weightNum');
+        const weightSlider = document.getElementById('weightSlider');
+        const actualHbNum = document.getElementById('actualHbNum');
+        const actualHbSlider = document.getElementById('actualHbSlider');
+        const targetHbNum = document.getElementById('targetHbNum');
+        const targetHbSlider = document.getElementById('targetHbSlider');
+        const depotIronNum = document.getElementById('depotIronNum');
+        const autoTargetHbCheck = document.getElementById('autoTargetHbCheck');
+        const autoDepotCheck = document.getElementById('autoDepotCheck');
+
+        // --- Sync Sliders and Number Inputs ---
+        function setupSync(numInput, sliderInput, onUpdate) {
+            numInput.addEventListener('input', () => {
+                let val = parseFloat(numInput.value);
+                if (!isNaN(val)) {
+                    sliderInput.value = val;
+                    onUpdate('manual');
+                }
+            });
+            sliderInput.addEventListener('input', () => {
+                numInput.value = sliderInput.value;
+                onUpdate('slider');
+            });
+        }
+
+        setupSync(weightNum, weightSlider, () => {
+            applyAutoRulesByWeight();
+            calculateIBW();
+            updateAllCalculations();
+        });
+
+        setupSync(actualHbNum, actualHbSlider, () => {
+            updateAllCalculations();
+        });
+
+        setupSync(targetHbNum, targetHbSlider, () => {
+            autoTargetHbCheck.checked = false;
+            updateAllCalculations();
+        });
+
+        depotIronNum.addEventListener('input', () => {
+            autoDepotCheck.checked = false;
+            updateAllCalculations();
+        });
+
+        // --- Auto Rules for Weight (<35 kg vs >=35 kg) ---
+        function applyAutoRulesByWeight() {
+            const weight = parseFloat(weightNum.value) || 60;
+            const ageGroupTag = document.getElementById('ageGroupTag');
+
+            if (weight < 35) {
+                ageGroupTag.textContent = 'أطفال / وزن < 35 كجم';
+                ageGroupTag.className = 'text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 border border-amber-300';
+                if (autoTargetHbCheck.checked) {
+                    targetHbNum.value = '13.0';
+                    targetHbSlider.value = '13.0';
+                }
+                if (autoDepotCheck.checked) {
+                    depotIronNum.value = Math.round(weight * 15);
+                }
+            } else {
+                ageGroupTag.textContent = 'بالغ (≥ 35 كجم)';
+                ageGroupTag.className = 'text-xs font-bold px-2.5 py-1 rounded-lg bg-teal-50 text-teal-800 border border-teal-200';
+                if (autoTargetHbCheck.checked) {
+                    targetHbNum.value = '15.0';
+                    targetHbSlider.value = '15.0';
+                }
+                if (autoDepotCheck.checked) {
+                    depotIronNum.value = 500;
+                }
+            }
+        }
+
+        function handleAutoTargetToggle() {
+            if (autoTargetHbCheck.checked) {
+                applyAutoRulesByWeight();
+                updateAllCalculations();
+            }
+        }
+
+        function handleAutoDepotToggle() {
+            if (autoDepotCheck.checked) {
+                applyAutoRulesByWeight();
+                updateAllCalculations();
+            }
+        }
+
+        function setManualDepot(val) {
+            autoDepotCheck.checked = false;
+            depotIronNum.value = val;
+            updateAllCalculations();
+        }
+
+        // --- Ideal Body Weight (IBW) Calculator (Devine Formula) ---
+        function toggleIBWPanel() {
+            const panel = document.getElementById('ibwPanel');
+            const chevron = document.getElementById('ibwChevron');
+            panel.classList.toggle('hidden');
+            chevron.classList.toggle('rotate-180');
+            calculateIBW();
+        }
+
+        let calculatedIBWValue = 57.0;
+        function calculateIBW() {
+            const gender = document.getElementById('ibwGender').value;
+            const heightCm = parseFloat(document.getElementById('ibwHeight').value) || 165;
+            const currentWeight = parseFloat(weightNum.value) || 60;
+
+            const heightInches = heightCm / 2.54;
+            const inchesOver5Ft = Math.max(0, heightInches - 60);
+
+            if (gender === 'male') {
+                calculatedIBWValue = 50 + (2.3 * inchesOver5Ft);
+            } else {
+                calculatedIBWValue = 45.5 + (2.3 * inchesOver5Ft);
+            }
+            calculatedIBWValue = Math.max(25, Math.round(calculatedIBWValue * 10) / 10);
+
+            const heightM = heightCm / 100;
+            const bmi = currentWeight / (heightM * heightM);
+
+            document.getElementById('ibwResultText').textContent = `${calculatedIBWValue.toFixed(1)} كجم`;
+            const bmiBadge = document.getElementById('bmiBadge');
+            bmiBadge.textContent = `BMI: ${bmi.toFixed(1)}`;
+            if (bmi >= 30) {
+                bmiBadge.className = 'mr-1 text-[11px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 font-bold';
+            } else {
+                bmiBadge.className = 'mr-1 text-[11px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold';
+            }
+        }
+
+        function applyIBW() {
+            weightNum.value = calculatedIBWValue;
+            weightSlider.value = calculatedIBWValue;
+            applyAutoRulesByWeight();
+            updateAllCalculations();
+        }
+
+        function toggleConstantModal() {
+            document.getElementById('constantExplanation').classList.toggle('hidden');
+        }
+
+        // --- Core Ganzoni & Clinical Regimen Calculation ---
+        function updateAllCalculations() {
+            const weight = Math.max(5, parseFloat(weightNum.value) || 60);
+            const actualHb = Math.max(2, parseFloat(actualHbNum.value) || 8.0);
+            const targetHb = Math.max(actualHb, parseFloat(targetHbNum.value) || 15.0);
+            const depotIron = Math.max(0, parseFloat(depotIronNum.value) || 0);
+
+            const hbDiff = Math.max(0, targetHb - actualHb);
+            const hbIronDeficit = Math.round(weight * hbDiff * 2.4);
+            const totalDeficit = Math.round(hbIronDeficit + depotIron);
+            const roundedDeficit = Math.max(100, Math.round(totalDeficit / 100) * 100);
+
+            // 1. Update Live Equation Display
+            document.getElementById('eqWeight').textContent = weight.toFixed(1).replace(/\.0$/, '');
+            document.getElementById('eqTargetHb').textContent = targetHb.toFixed(1);
+            document.getElementById('eqActualHb').textContent = actualHb.toFixed(1);
+            document.getElementById('eqDiffHb').textContent = hbDiff.toFixed(1);
+            document.getElementById('eqDepot').textContent = Math.round(depotIron);
+
+            // 2. Update Result Numbers & Percentages
+            const hbPct = totalDeficit > 0 ? Math.round((hbIronDeficit / totalDeficit) * 100) : 0;
+            const depotPct = totalDeficit > 0 ? (100 - hbPct) : 0;
+
+            document.getElementById('resHbIron').textContent = hbIronDeficit.toLocaleString('en-US');
+            document.getElementById('resHbIronPct').textContent = `${hbPct}%`;
+            document.getElementById('resDepotIron').textContent = Math.round(depotIron).toLocaleString('en-US');
+            document.getElementById('resDepotIronPct').textContent = `${depotPct}%`;
+            document.getElementById('resTotalDeficit').textContent = totalDeficit.toLocaleString('en-US');
+            document.getElementById('resRoundedDeficit').textContent = `${roundedDeficit.toLocaleString('en-US')} ملجم`;
+
+            // 3. Update Progress Bar
+            document.getElementById('barHbText').textContent = `${hbIronDeficit} ملجم`;
+            document.getElementById('barDepotText').textContent = `${Math.round(depotIron)} ملجم`;
+            document.getElementById('barHbWidth').style.width = `${hbPct}%`;
+            document.getElementById('barDepotWidth').style.width = `${depotPct}%`;
+
+            // 4. Update Anemia Severity Badge & Critical Alert Banner
+            const severityBadge = document.getElementById('anemiaSeverityBadge');
+            const criticalAlert = document.getElementById('criticalHbAlert');
+
+            if (actualHb < 7.0) {
+                severityBadge.textContent = 'أنيميا حرجة جداً (< 7.0 g/dL)';
+                severityBadge.className = 'px-2.5 py-0.5 rounded-full bg-red-600 text-white font-bold shadow-sm';
+                criticalAlert.classList.remove('hidden');
+            } else if (actualHb < 8.0) {
+                severityBadge.textContent = 'أنيميا شديدة (Severe Anemia)';
+                severityBadge.className = 'px-2.5 py-0.5 rounded-full bg-rose-200 text-rose-900 font-bold border border-rose-300';
+                criticalAlert.classList.add('hidden');
+            } else if (actualHb < 10.5) {
+                severityBadge.textContent = 'أنيميا متوسطة الشدة (Moderate)';
+                severityBadge.className = 'px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold border border-amber-300';
+                criticalAlert.classList.add('hidden');
+            } else if (actualHb < 12.0) {
+                severityBadge.textContent = 'أنيميا طفيفة (Mild Anemia)';
+                severityBadge.className = 'px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-900 font-bold border border-sky-300';
+                criticalAlert.classList.add('hidden');
+            } else {
+                severityBadge.textContent = 'نطاق طبيعي / تعويض المخزون فقط';
+                severityBadge.className = 'px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold border border-emerald-300';
+                criticalAlert.classList.add('hidden');
+            }
+
+            // 5. Update Sacrofer / Venofer (Iron Sucrose 100 mg/ampoule)
+            const totalAmpoules = Math.max(1, Math.round(totalDeficit / 100));
+            const isPediatric = weight < 35;
+            const singleSessionDoseSacrofer = isPediatric ? Math.min(100, Math.round(weight * 3)) : 200;
+            const totalSessionsSacrofer = Math.max(1, Math.ceil((totalAmpoules * 100) / singleSessionDoseSacrofer));
+
+            document.getElementById('sacroferAmpoules').textContent = totalAmpoules;
+            document.getElementById('sacroferSessions').textContent = totalSessionsSacrofer;
+            document.getElementById('sacroferTotalMgBadge').textContent = `${totalAmpoules * 100} ملجم`;
+
+            if (isPediatric) {
+                document.getElementById('sacroferPerSessionLabel').textContent = `~${singleSessionDoseSacrofer} ملجم / جلسة (أطفال)`;
+                document.getElementById('sacroferProtocolText').innerHTML =
+                    `للأطفال: يُعطى بجرعة لا تتجاوز <strong>3 ملجم/كجم (حوالي ${singleSessionDoseSacrofer} ملجم)</strong> في الجلسة الواحدة، مُخففاً في محلول ملح Normal Saline على مدار 30 دقيقة.`;
+            } else {
+                document.getElementById('sacroferPerSessionLabel').textContent = '200 ملجم (أمبولتين) / جلسة';
+                document.getElementById('sacroferProtocolText').innerHTML =
+                    `تُخفف أمبولتان (<strong>200 ملجم</strong>) في <strong>100 مل محلول ملح 0.9% Normal Saline</strong> وتُعطى بالتنقيط الوريدي البطيء على مدار <strong>15 إلى 30 دقيقة</strong>، بمعدل جلستين إلى 3 جلسات أسبوعياً.`;
+            }
+
+            // Render Visual Ampoules
+            const ampContainer = document.getElementById('ampouleVisualContainer');
+            ampContainer.innerHTML = '';
+            const maxVisual = Math.min(totalAmpoules, 24);
+            for (let i = 0; i < maxVisual; i++) {
+                const amp = document.createElement('div');
+                amp.className = 'ampoule-icon bg-amber-600 text-white text-[9px] font-bold shadow-sm';
+                amp.title = `أمبولة رقم ${i + 1} (100 ملجم)`;
+                amp.textContent = '100';
+                ampContainer.appendChild(amp);
+            }
+            if (totalAmpoules > 24) {
+                const moreSpan = document.createElement('span');
+                moreSpan.className = 'text-xs font-extrabold text-amber-800 mr-2';
+                moreSpan.textContent = `+${totalAmpoules - 24} أمبولة إضافية`;
+                ampContainer.appendChild(moreSpan);
+            }
+
+            // 6. Update Injectafer / Ferinject (Ferric Carboxymaltose)
+            document.getElementById('injectaferGanzoniMg').textContent = roundedDeficit.toLocaleString('en-US');
+
+            // Simplified FDA/EMA Dosing Table Calculation
+            let simplifiedMg = 1000;
+            let simplifiedNote = '';
+            if (weight < 35) {
+                simplifiedMg = Math.min(500, Math.round((weight * 15) / 100) * 100);
+                simplifiedNote = 'أقل من 35 كجم (15 ملجم/كجم)';
+            } else if (weight < 70) {
+                if (actualHb < 10.0) {
+                    simplifiedMg = 1500;
+                    simplifiedNote = 'وزن 35-70 كجم | Hb < 10';
+                } else {
+                    simplifiedMg = 1000;
+                    simplifiedNote = 'وزن 35-70 كجم | Hb ≥ 10';
+                }
+            } else {
+                if (actualHb < 10.0) {
+                    simplifiedMg = 2000;
+                    simplifiedNote = 'وزن > 70 كجم | Hb < 10';
+                } else {
+                    simplifiedMg = 1500;
+                    simplifiedNote = 'وزن > 70 كجم | Hb ≥ 10';
+                }
+            }
+
+            document.getElementById('injectaferSimplifiedMg').textContent = simplifiedMg.toLocaleString('en-US');
+            document.getElementById('injectaferSimplifiedNote').textContent = simplifiedNote;
+
+            // Max single session dose for Injectafer is min(1000 mg, 20 mg/kg)
+            const maxSingleInjectafer = Math.min(1000, Math.floor((weight * 20) / 100) * 100 || 500);
+            const targetInjectaferDose = roundedDeficit;
+            const sessionsBox = document.getElementById('injectaferSessionsBox');
+            sessionsBox.innerHTML = '';
+
+            let remaining = targetInjectaferDose;
+            let sessionCount = 1;
+            while (remaining > 0 && sessionCount <= 4) {
+                const currentSessionDose = Math.min(remaining, maxSingleInjectafer);
+                const weekText = sessionCount === 1 ? 'اليوم الأول (الجلسة الأولى)' : `بعد ${sessionCount - 1} أسبوع (الجلسة ${sessionCount})`;
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between bg-teal-50/60 border border-teal-200/80 px-3 py-2 rounded-xl text-xs';
+                row.innerHTML = `
+                    <span class="font-bold text-slate-700 flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full bg-teal-600 text-white text-[11px] flex items-center justify-center font-bold">${sessionCount}</span>
+                        <span>${weekText}:</span>
+                    </span>
+                    <span class="font-extrabold text-teal-800">${currentSessionDose} ملجم (خلال 15 دقيقة)</span>
+                `;
+                sessionsBox.appendChild(row);
+                remaining -= currentSessionDose;
+                sessionCount++;
+            }
+
+            // 7. Update Monoferric (20 mg/kg single visit cap)
+            const maxSingleMonoferric = Math.min(1500, Math.round((weight * 20) / 100) * 100);
+            const monoText = document.getElementById('monoferricText');
+            if (roundedDeficit <= maxSingleMonoferric) {
+                monoText.innerHTML = `يمكن إعطاء كامل عجز المريض (<strong>${roundedDeficit} ملجم</strong>) في <strong>جلسة وريدية واحدة فقط</strong> خلال 20-30 دقيقة (الحد الأقصى لوزن المريض في الجلسة الواحدة: ${maxSingleMonoferric} ملجم).`;
+            } else {
+                monoText.innerHTML = `يُعطى <strong>${maxSingleMonoferric} ملجم</strong> (20 ملجم/كجم) في الجلسة الأولى، ويُستكمل الباقي (<strong>${roundedDeficit - maxSingleMonoferric} ملجم</strong>) في جلسة متابعة بعد أسبوع.`;
+            }
+
+            // 8. Update Milestones Text & Chart
+            const wk4Hb = Math.min(targetHb, actualHb + Math.min(2.2, hbDiff * 0.45));
+            document.getElementById('milestoneWk4Hb').textContent = `${wk4Hb.toFixed(1)} g/dL`;
+            document.getElementById('milestoneWk8Hb').textContent = `${targetHb.toFixed(1)} g/dL`;
+
+            drawRecoveryChart(actualHb, targetHb);
+        }
+
+        // --- Load Quick Clinical Case Presets ---
+        function loadPreset(caseId) {
+            const badge = document.getElementById('activeScenarioBadge');
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-teal-500', 'bg-teal-50/70');
+            });
+            const activeBtn = document.getElementById(`presetBtn${caseId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('ring-2', 'ring-teal-500', 'bg-teal-50/70');
+            }
+
+            autoTargetHbCheck.checked = true;
+            autoDepotCheck.checked = true;
+
+            if (caseId === 1) {
+                weightNum.value = 60; weightSlider.value = 60;
+                actualHbNum.value = 8.0; actualHbSlider.value = 8.0;
+                badge.textContent = 'حالة 1: سيدة تعاني من غزارة الطمث (60 كجم)';
+            } else if (caseId === 2) {
+                weightNum.value = 82; weightSlider.value = 82;
+                actualHbNum.value = 9.2; actualHbSlider.value = 9.2;
+                badge.textContent = 'حالة 2: مريض فشل كلوي مزمن (82 كجم)';
+            } else if (caseId === 3) {
+                weightNum.value = 24; weightSlider.value = 24;
+                actualHbNum.value = 7.5; actualHbSlider.value = 7.5;
+                badge.textContent = 'حالة 3: طفل يعاني من سوء امتصاص (24 كجم)';
+            } else if (caseId === 4) {
+                weightNum.value = 75; weightSlider.value = 75;
+                actualHbNum.value = 6.8; actualHbSlider.value = 6.8;
+                badge.textContent = 'حالة 4: أنيميا حادة قبل جراحة (75 كجم)';
+            }
+
+            applyAutoRulesByWeight();
+            updateAllCalculations();
+        }
+
+        function resetToDefault() {
+            loadPreset(1);
+        }
+
+        // --- Responsive Canvas Recovery Trajectory Chart ---
+        function drawRecoveryChart(actualHb, targetHb) {
+            const canvas = document.getElementById('recoveryChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = (rect.width - 24) * dpr;
+            canvas.height = (rect.height - 24) * dpr;
+            ctx.scale(dpr, dpr);
+
+            const width = rect.width - 24;
+            const height = rect.height - 24;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const padLeft = 45;
+            const padRight = 25;
+            const padTop = 25;
+            const padBottom = 35;
+            const plotW = width - padLeft - padRight;
+            const plotH = height - padTop - padBottom;
+
+            const minHb = Math.max(3, Math.floor(actualHb - 1));
+            const maxHb = Math.max(16, Math.ceil(targetHb + 1));
+
+            const weeks = [0, 1, 2, 4, 6, 8, 10, 12];
+            const diff = Math.max(0, targetHb - actualHb);
+
+            // IV Iron Recovery Curve (Faster initial climb, reaches target around Wk 6-8)
+            const ivPoints = [
+                actualHb,
+                actualHb + diff * 0.18,
+                actualHb + diff * 0.42,
+                actualHb + diff * 0.75,
+                actualHb + diff * 0.92,
+                targetHb,
+                targetHb,
+                targetHb
+            ];
+
+            // Oral Iron Recovery Curve (Gradual climb over 12 weeks)
+            const oralPoints = [
+                actualHb,
+                actualHb + diff * 0.08,
+                actualHb + diff * 0.22,
+                actualHb + diff * 0.48,
+                actualHb + diff * 0.68,
+                actualHb + diff * 0.84,
+                actualHb + diff * 0.94,
+                targetHb
+            ];
+
+            function getX(wkIndex) {
+                return padLeft + (wkIndex / (weeks.length - 1)) * plotW;
+            }
+            function getY(hbVal) {
+                return padTop + plotH - ((hbVal - minHb) / (maxHb - minHb)) * plotH;
+            }
+
+            // Draw Horizontal Grid Lines
+            ctx.font = 'bold 11px Cairo, sans-serif';
+            ctx.textAlign = 'right';
+            const steps = 4;
+            for (let i = 0; i <= steps; i++) {
+                const val = minHb + (i / steps) * (maxHb - minHb);
+                const y = getY(val);
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(padLeft, y);
+                ctx.lineTo(width - padRight, y);
+                ctx.stroke();
+
+                ctx.fillStyle = '#64748b';
+                ctx.fillText(`${val.toFixed(1)}`, padLeft - 8, y + 4);
+            }
+
+            // Draw X-Axis Week Labels
+            ctx.textAlign = 'center';
+            weeks.forEach((wk, i) => {
+                const x = getX(i);
+                ctx.fillStyle = '#475569';
+                ctx.fillText(wk === 0 ? 'البداية' : `أسبوع ${wk}`, x, height - 10);
+            });
+
+            // Helper to draw smooth line
+            function drawCurve(points, strokeColor, fillColor) {
+                ctx.beginPath();
+                points.forEach((val, i) => {
+                    const x = getX(i);
+                    const y = getY(val);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.strokeStyle = strokeColor;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                if (fillColor) {
+                    ctx.lineTo(getX(points.length - 1), padTop + plotH);
+                    ctx.lineTo(getX(0), padTop + plotH);
+                    ctx.closePath();
+                    ctx.fillStyle = fillColor;
+                    ctx.fill();
+                }
+
+                // Draw Dots and Values
+                points.forEach((val, i) => {
+                    const x = getX(i);
+                    const y = getY(val);
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+                    ctx.strokeStyle = strokeColor;
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                });
+            }
+
+            drawCurve(oralPoints, '#f43f5e', 'rgba(244, 63, 94, 0.06)');
+            drawCurve(ivPoints, '#0d9488', 'rgba(13, 148, 136, 0.12)');
+        }
+
+        // --- Copy Clinical Report to Clipboard ---
+        function copyClinicalSummary() {
+            const weight = weightNum.value;
+            const actualHb = actualHbNum.value;
+            const targetHb = targetHbNum.value;
+            const depot = depotIronNum.value;
+            const totalDeficit = document.getElementById('resTotalDeficit').textContent;
+            const roundedDeficit = document.getElementById('resRoundedDeficit').textContent;
+            const sacroferAmps = document.getElementById('sacroferAmpoules').textContent;
+            const sacroferSess = document.getElementById('sacroferSessions').textContent;
+            const simplifiedMg = document.getElementById('injectaferSimplifiedMg').textContent;
+
+            const reportText = [
+                `=== تقرير حساب عجز الحديد الوريدي (معادلة جانزوني) ===`,
+                `• وزن المريض: ${weight} كجم`,
+                `• الهيموجلوبين الحالي (Actual Hb): ${actualHb} g/dL`,
+                `• الهيموجلوبين المستهدف (Target Hb): ${targetHb} g/dL`,
+                `• مخزون الحديد المستهدف (Depot Iron): ${depot} ملجم`,
+                `----------------------------------------`,
+                `• إجمالي عجز الحديد الكلي (Total Iron Deficit): ${totalDeficit} ملجم (الجرعة المقربة: ${roundedDeficit})`,
+                `----------------------------------------`,
+                `[الخيارات العلاجية الوريدية المقترحة]:`,
+                `1) Sacrofer / Venofer (Iron Sucrose 100mg/5mL): إجمالي ${sacroferAmps} أمبولة مقسمة على ${sacroferSess} جلسات (أمبولتان 200 ملجم في 100 مل محلول ملح خلال 30 دقيقة).`,
+                `2) Injectafer / Ferinject (Ferric Carboxymaltose): ${roundedDeficit} حسب جانزوني (أو ${simplifiedMg} ملجم حسب الجدول المبسط)، بحد أقصى 1000 ملجم في الجلسة الواحدة خلال 15 دقيقة.`
+            ].join('\n');
+
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = reportText;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            try {
+                document.execCommand('copy');
+                showToast();
+            } catch (err) {
+                console.error('Copy failed', err);
+            }
+            document.body.removeChild(tempTextArea);
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toastNotification');
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3200);
+        }
+
+        // --- Window Events ---
+        window.addEventListener('resize', () => {
+            updateAllCalculations();
+        });
+
+        window.onload = function () {
+            loadPreset(1);
+            calculateIBW();
+        };
+    </script>
+</body>
+</html>
